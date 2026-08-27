@@ -1,0 +1,3 @@
+-- Seed through the organizer UI after creating an auth user. The client demo ships
+-- with Club Deportivo Los Andes and a 500-number raffle in localStorage; real and
+-- demo records are intentionally never mixed.
