@@ -5,7 +5,7 @@
 - [x] Next.js 16, React 19, TypeScript strict, Tailwind 4
 - [x] Central product configuration and responsive design system
 - [x] Supabase clients, environment template, lint and tests
-- [ ] Vercel project (requires account connection)
+- [x] Production deployment at `https://p2pme.vercel.app`
 
 ## Database and auth
 
@@ -35,4 +35,5 @@
 
 - [x] Architecture, integration, pricing, blockers, decisions
 - [x] Demo script, deck outline and submission draft
-- [ ] Public Vercel URL, video and final deck
+- [x] Public Vercel URL
+- [ ] Video and final deck

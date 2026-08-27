@@ -8,6 +8,8 @@ Fondo replaces personal bank accounts, WhatsApp receipts and manual spreadsheets
 
 The repository includes an immediately usable, clearly labelled local demo. It never represents simulated payments as real transactions. Live checkout is activated only after P2P.me and wallet prerequisites are configured.
 
+Production demo: https://p2pme.vercel.app
+
 ```bash
 npm install
 cp .env.example .env.local

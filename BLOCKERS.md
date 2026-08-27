@@ -8,6 +8,6 @@
 
 Code readiness: exact widget v1.8.1 adapter, fiat-denominated checkout, state mapping, recovery identifiers, idempotent database completion and environment validation are implemented. Mock mode is visibly labelled and never produces a fake transaction hash.
 
-## Supabase/Vercel — NEEDS PROJECT CREDENTIALS
+## Supabase — NEEDS PROJECT CREDENTIALS
 
-The schema, RLS and clients are ready. A Supabase project and Vercel project have not been created because no account credentials or connections were supplied.
+The schema, RLS and clients are ready. A hosted Supabase project has not been configured because no project credentials were supplied. The web demo is deployed to Vercel in mock mode.
