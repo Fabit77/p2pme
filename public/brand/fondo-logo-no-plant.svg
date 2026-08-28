@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="240" viewBox="0 0 820 240" role="img" aria-labelledby="title desc">
+  <title id="title">Fondo</title>
+  <desc id="desc">Dos personas reunidas alrededor de un fondo común circular.</desc>
+  <g transform="translate(12 12)">
+    <circle cx="108" cy="108" r="40" fill="#45b95e"/>
+    <circle cx="35" cy="145" r="24" fill="#076b3b"/>
+    <path d="M33 187a58 58 0 0 0 49 28" fill="none" stroke="#076b3b" stroke-width="28" stroke-linecap="round"/>
+    <circle cx="181" cy="145" r="24" fill="#45b95e"/>
+    <path d="M183 187a58 58 0 0 1-49 28" fill="none" stroke="#45b95e" stroke-width="28" stroke-linecap="round"/>
+  </g>
+  <text x="265" y="166" fill="#076b3b" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="142" font-weight="800" letter-spacing="-6">Fondo</text>
+</svg>

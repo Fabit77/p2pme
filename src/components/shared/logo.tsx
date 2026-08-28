@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Sprout } from "lucide-react";
-import { APP_CONFIG } from "@/lib/config";
+import Image from "next/image";
 
 export function Logo({ href = "/", compact = false }: { href?: string; compact?: boolean }) {
-  return <Link href={href} className="inline-flex items-center gap-2 font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Sprout className="size-5" /></span>{!compact && <span>{APP_CONFIG.name}</span>}</Link>;
+  return <Link href={href} className="inline-flex items-center" aria-label="Fondo"><Image src={compact ? "/brand/fondo-mark-no-plant.svg" : "/brand/fondo-logo-no-plant.svg"} alt="Fondo" width={compact ? 40 : 137} height={40} priority /></Link>;
 }
