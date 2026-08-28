@@ -8,3 +8,7 @@ export const APP_CONFIG = {
 } as const;
 
 export const IS_P2P_LIVE = process.env.NEXT_PUBLIC_P2P_MODE === "live";
+
+export const IS_SUPABASE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);

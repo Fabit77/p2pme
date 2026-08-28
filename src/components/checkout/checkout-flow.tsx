@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { IS_P2P_LIVE } from "@/lib/config";
 import { formatFiat } from "@/lib/money";
 import { useFondoStore } from "@/lib/store";
+import type { Campaign } from "@/lib/types";
 
-export function CheckoutFlow({ organizationSlug, campaignSlug }: { organizationSlug: string; campaignSlug: string }) {
+export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign }) {
   const router = useRouter();
   const search = useSearchParams();
   const { campaigns, completeDemoPayment, ready } = useFondoStore();
-  const campaign = campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
+  const campaign = initialCampaign ?? campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
   const numbers = useMemo(() => [...new Set((search.get("numbers") ?? search.get("number") ?? "").split(",").map(Number).filter((number) => Number.isInteger(number) && number > 0))].sort((a, b) => a - b), [search]);
   const reservationIds = useMemo(() => (search.get("reservations") ?? search.get("reservation") ?? "").split(",").filter(Boolean), [search]);
   const expires = search.get("expires") ?? "";
@@ -36,7 +37,7 @@ export function CheckoutFlow({ organizationSlug, campaignSlug }: { organizationS
   }, [expires]);
 
   const countdown = `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
-  if (!ready) return null;
+  if (!initialCampaign && !ready) return null;
   if (!campaign || !numbers.length || reservationIds.length !== numbers.length) return <div className="grid min-h-screen place-items-center p-6 text-center"><div><h1 className="text-2xl font-bold">Esta reserva no es válida</h1><Button className="mt-5" onClick={() => router.push(`/${organizationSlug}/${campaignSlug}`)}>Elegir números</Button></div></div>;
 
   const total = campaign.priceMinor * numbers.length;
@@ -48,6 +49,7 @@ export function CheckoutFlow({ organizationSlug, campaignSlug }: { organizationS
     setStage("payment");
   };
   const finishDemo = async () => {
+    if (initialCampaign) { setError("La reserva quedó registrada. Falta conectar el proveedor P2P.me para confirmar el pago real."); return; }
     setProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 900));
     try {

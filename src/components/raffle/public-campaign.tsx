@@ -10,18 +10,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatFiat } from "@/lib/money";
 import { useFondoStore } from "@/lib/store";
+import { createClient } from "@/lib/supabase/client";
+import type { Campaign } from "@/lib/types";
 
-export function PublicCampaign({ organizationSlug, campaignSlug }: { organizationSlug: string; campaignSlug: string }) {
+export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign }) {
   const router = useRouter();
   const { campaigns, ready, reserveTickets } = useFondoStore();
-  const campaign = campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
+  const campaign = initialCampaign ?? campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
   const [selected, setSelected] = useState<number[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [reserving, setReserving] = useState(false);
   const shown = useMemo(() => campaign?.tickets.filter((ticket) => !query || ticket.number.toString().includes(query.trim())).slice(0, query ? 80 : undefined) ?? [], [campaign, query]);
 
-  if (!ready) return <div className="grid min-h-screen place-items-center"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+  if (!initialCampaign && !ready) return <div className="grid min-h-screen place-items-center"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   if (!campaign) return <div className="grid min-h-screen place-items-center p-6 text-center"><div><h1 className="text-2xl font-bold">Campaña no encontrada</h1><Button className="mt-5" onClick={() => router.push("/")}>Volver al inicio</Button></div></div>;
 
   const sold = campaign.tickets.filter((ticket) => ticket.status === "PAID").length;
@@ -33,13 +35,23 @@ export function PublicCampaign({ organizationSlug, campaignSlug }: { organizatio
     const available = campaign.tickets.filter((ticket) => ticket.status === "AVAILABLE" && !selectedSet.has(ticket.number));
     if (available.length) setSelected((current) => [...current, available[Math.floor(Math.random() * available.length)].number].sort((a, b) => a - b));
   };
-  const continueCheckout = () => {
+  const continueCheckout = async () => {
     if (!selected.length) return;
     setReserving(true);
     setError("");
     try {
-      const reservation = reserveTickets(campaign.id, selected);
-      const params = new URLSearchParams({ numbers: selected.join(","), reservations: reservation.reservationIds.join(","), expires: reservation.expiresAt });
+      let reservationIds: string[]; let expiresAt: string;
+      if (initialCampaign) {
+        const participantSessionId = crypto.randomUUID();
+        const { data, error: reservationError } = await createClient().rpc("reserve_raffle_tickets", { p_campaign_id: campaign.id, p_ticket_numbers: selected, p_participant_session_id: participantSessionId });
+        if (reservationError || !data?.length) throw new Error("Uno o más números ya no están disponibles.");
+        reservationIds = (data as Array<{ reservation_id: string; expires_at: string }>).map((row) => row.reservation_id);
+        expiresAt = data[0].expires_at;
+      } else {
+        const reservation = reserveTickets(campaign.id, selected);
+        reservationIds = reservation.reservationIds; expiresAt = reservation.expiresAt;
+      }
+      const params = new URLSearchParams({ numbers: selected.join(","), reservations: reservationIds.join(","), expires: expiresAt });
       router.push(`/${organizationSlug}/${campaignSlug}/checkout?${params}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No pudimos reservar esos números.");
