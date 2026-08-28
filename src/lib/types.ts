@@ -38,6 +38,7 @@ export interface Payment {
   participantName: string;
   participantEmail: string;
   ticketNumber?: number;
+  ticketNumbers?: number[];
   localCurrency: FiatCurrency;
   localAmountMinor: number;
   usdcAmountMicro?: number;

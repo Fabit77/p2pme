@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { Check, ExternalLink, Printer } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
@@ -9,7 +10,28 @@ import { formatFiat, formatUsdc } from "@/lib/money";
 import { useFondoStore } from "@/lib/store";
 
 export function ReceiptView({ id }: { id: string }) {
-  const { payments, campaigns, ready } = useFondoStore(); const payment = payments.find((item) => item.id === id); const campaign = campaigns.find((item) => item.id === payment?.campaignId);
-  if (!ready) return null; if (!payment || !campaign) return <main className="grid min-h-screen place-items-center"><div className="text-center"><h1 className="text-2xl font-bold">Comprobante no encontrado</h1><Button asChild className="mt-5"><Link href="/">Volver</Link></Button></div></main>;
-  return <div className="min-h-screen bg-muted/30"><header className="no-print border-b bg-card"><div className="mx-auto flex h-16 max-w-2xl items-center px-4"><Logo /></div></header><main className="mx-auto max-w-2xl px-4 py-10"><div className="text-center"><span className="mx-auto grid size-14 place-items-center rounded-full bg-success text-white"><Check className="size-7" /></span><h1 className="mt-4 text-3xl font-bold">¡Listo!</h1><p className="mt-2 text-lg text-muted-foreground">Tu aporte fue recibido</p></div><Card className="mt-8 overflow-hidden"><div className="border-b bg-secondary p-6 text-center"><p className="text-sm text-muted-foreground">Número asignado</p><p className="mt-1 text-4xl font-bold">#{payment.ticketNumber?.toString().padStart(3,"0")}</p></div><CardContent className="p-6"><div className="space-y-4">{[["Organización",campaign.organizationName],["Campaña",campaign.title],["Participante",payment.participantName],["Monto",formatFiat(payment.localAmountMinor)],["Settlement",payment.usdcAmountMicro ? formatUsdc(payment.usdcAmountMicro) : payment.provider === "mock" ? "No aplica en simulación" : "Pendiente"],["Fecha",new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeStyle: "short" }).format(new Date(payment.completedAt ?? payment.createdAt))],["Referencia",payment.providerOrderId ?? payment.id]].map(([label,value]) => <div key={label} className="flex items-start justify-between gap-6 border-b pb-3 last:border-0"><span className="text-sm text-muted-foreground">{label}</span><span className="max-w-[65%] text-right text-sm font-semibold">{value}</span></div>)}</div><div className="mt-5 flex items-center justify-center"><Badge variant={payment.provider === "mock" ? "warning" : "success"}>{payment.provider === "mock" ? "Simulación confirmada" : "Pago confirmado"}</Badge></div>{payment.txHash && <Button asChild variant="outline" className="mt-4 w-full"><a href={`https://sepolia.basescan.org/tx/${payment.txHash}`} target="_blank" rel="noreferrer">Ver transacción <ExternalLink className="size-4" /></a></Button>}</CardContent></Card><div className="no-print mt-6 grid gap-3 sm:grid-cols-2"><Button asChild><Link href={`/${campaign.organizationSlug}/${campaign.slug}`}>Volver a la campaña</Link></Button><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" />Imprimir</Button></div></main></div>;
+  const { payments, campaigns, ready } = useFondoStore();
+  const payment = payments.find((item) => item.id === id);
+  const campaign = campaigns.find((item) => item.id === payment?.campaignId);
+  if (!ready) return null;
+  if (!payment || !campaign) return <main className="grid min-h-screen place-items-center"><div className="text-center"><h1 className="text-2xl font-bold">Comprobante no encontrado</h1><Button asChild className="mt-5"><Link href="/">Volver</Link></Button></div></main>;
+
+  const ticketNumbers = payment.ticketNumbers ?? (payment.ticketNumber ? [payment.ticketNumber] : []);
+  const details = [
+    ["Organización", campaign.organizationName], ["Campaña", campaign.title], ["Participante", payment.participantName],
+    ["Monto", formatFiat(payment.localAmountMinor)], ["Settlement", payment.usdcAmountMicro ? formatUsdc(payment.usdcAmountMicro) : payment.provider === "mock" ? "No aplica en simulación" : "Pendiente"],
+    ["Fecha", new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeStyle: "short" }).format(new Date(payment.completedAt ?? payment.createdAt))], ["Referencia", payment.providerOrderId ?? payment.id],
+  ];
+
+  return <div className="min-h-screen bg-muted/30">
+    <header className="no-print border-b bg-card"><div className="mx-auto flex h-16 max-w-2xl items-center px-4"><Logo /></div></header>
+    <main className="mx-auto max-w-2xl px-4 py-10">
+      <div className="text-center"><span className="mx-auto grid size-14 place-items-center rounded-full bg-success text-white"><Check className="size-7" /></span><h1 className="mt-4 text-3xl font-bold">¡Listo!</h1><p className="mt-2 text-lg text-muted-foreground">Tu aporte fue recibido</p></div>
+      <Card className="mt-8 overflow-hidden">
+        <div className="border-b bg-secondary p-6 text-center"><p className="text-sm text-muted-foreground">{ticketNumbers.length === 1 ? "Número asignado" : `${ticketNumbers.length} números asignados`}</p><div className="mt-3 flex flex-wrap justify-center gap-2">{ticketNumbers.map((number) => <span key={number} className="rounded-xl bg-card px-3 py-2 text-xl font-bold">#{number.toString().padStart(3, "0")}</span>)}</div></div>
+        <CardContent className="p-6"><div className="space-y-4">{details.map(([label, value]) => <div key={label} className="flex items-start justify-between gap-6 border-b pb-3 last:border-0"><span className="text-sm text-muted-foreground">{label}</span><span className="max-w-[65%] text-right text-sm font-semibold">{value}</span></div>)}</div><div className="mt-5 flex items-center justify-center"><Badge variant={payment.provider === "mock" ? "warning" : "success"}>{payment.provider === "mock" ? "Simulación confirmada" : "Pago confirmado"}</Badge></div>{payment.txHash && <Button asChild variant="outline" className="mt-4 w-full"><a href={`https://sepolia.basescan.org/tx/${payment.txHash}`} target="_blank" rel="noreferrer">Ver transacción <ExternalLink className="size-4" /></a></Button>}</CardContent>
+      </Card>
+      <div className="no-print mt-6 grid gap-3 sm:grid-cols-2"><Button asChild><Link href={`/${campaign.organizationSlug}/${campaign.slug}`}>Volver a la campaña</Link></Button><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" />Imprimir</Button></div>
+    </main>
+  </div>;
 }

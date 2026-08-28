@@ -10,8 +10,8 @@ const STORAGE_KEY = "fondo-demo-state-v1";
 interface StoreValue extends FondoState {
   ready: boolean;
   createCampaign: (input: Pick<Campaign, "title" | "description" | "type" | "ticketCount" | "priceMinor" | "goalMinor" | "endsAt">) => Campaign;
-  reserveTicket: (campaignId: string, number: number) => { reservationId: string; expiresAt: string };
-  completeDemoPayment: (input: { campaignId: string; number: number; name: string; email: string; reservationId: string }) => Payment;
+  reserveTickets: (campaignId: string, numbers: number[]) => { reservationIds: string[]; expiresAt: string };
+  completeDemoPayment: (input: { campaignId: string; numbers: number[]; name: string; email: string; reservationIds: string[] }) => Payment;
   resetDemo: () => void;
 }
 
@@ -58,45 +58,53 @@ export function FondoStoreProvider({ children }: { children: React.ReactNode }) 
     return campaign;
   }, []);
 
-  const reserveTicket = useCallback<StoreValue["reserveTicket"]>((campaignId, number) => {
-    const reservationId = createId("reservation");
+  const reserveTickets = useCallback<StoreValue["reserveTickets"]>((campaignId, numbers) => {
+    const uniqueNumbers = [...new Set(numbers)].sort((a, b) => a - b);
+    if (!uniqueNumbers.length) throw new Error("Selecciona al menos un número.");
+    const reservationIds = uniqueNumbers.map(() => createId("reservation"));
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
-    const ticket = state.campaigns.find((campaign) => campaign.id === campaignId)?.tickets.find((item) => item.number === number);
-    const isExpired = ticket?.status === "RESERVED" && ticket.reservedUntil && Date.parse(ticket.reservedUntil) <= Date.now();
-    if (!ticket) throw new Error("No encontramos ese número.");
-    if (ticket.status !== "AVAILABLE" && !isExpired) throw new Error("Ese número ya no está disponible.");
+    const campaign = state.campaigns.find((item) => item.id === campaignId);
+    const selectedTickets = uniqueNumbers.map((number) => campaign?.tickets.find((ticket) => ticket.number === number));
+    if (selectedTickets.some((ticket) => !ticket)) throw new Error("No encontramos uno de los números.");
+    const unavailable = selectedTickets.find((ticket) => ticket && ticket.status !== "AVAILABLE" && !(ticket.status === "RESERVED" && ticket.reservedUntil && Date.parse(ticket.reservedUntil) <= Date.now()));
+    if (unavailable) throw new Error(`El número ${unavailable.number} ya no está disponible.`);
+    const reservationByNumber = new Map(uniqueNumbers.map((number, index) => [number, reservationIds[index]]));
     setState((current) => ({
       ...current,
-      campaigns: current.campaigns.map((campaign) => campaign.id !== campaignId ? campaign : {
-        ...campaign,
-        tickets: campaign.tickets.map((ticket) => {
-          if (ticket.number !== number) return ticket;
-          const isExpired = ticket.status === "RESERVED" && ticket.reservedUntil && Date.parse(ticket.reservedUntil) <= Date.now();
-          if (ticket.status !== "AVAILABLE" && !isExpired) throw new Error("Ese número ya no está disponible.");
-          return { ...ticket, status: "RESERVED", reservationId, reservedUntil: expiresAt };
+      campaigns: current.campaigns.map((item) => item.id !== campaignId ? item : {
+        ...item,
+        tickets: item.tickets.map((ticket) => {
+          const reservationId = reservationByNumber.get(ticket.number);
+          return reservationId ? { ...ticket, status: "RESERVED", reservationId, reservedUntil: expiresAt } : ticket;
         }),
       }),
     }));
-    return { reservationId, expiresAt };
+    return { reservationIds, expiresAt };
   }, [state.campaigns]);
 
   const completeDemoPayment = useCallback<StoreValue["completeDemoPayment"]>((input) => {
     const campaign = state.campaigns.find((item) => item.id === input.campaignId);
     if (!campaign) throw new Error("Campaña no encontrada.");
-    const ticket = campaign.tickets.find((item) => item.number === input.number);
-    if (!ticket || ticket.status !== "RESERVED" || ticket.reservationId !== input.reservationId) throw new Error("La reserva ya no es válida.");
-    const existing = state.payments.find((item) => item.campaignId === input.campaignId && item.ticketNumber === input.number && item.status === "COMPLETED");
+    const uniqueNumbers = [...new Set(input.numbers)].sort((a, b) => a - b);
+    if (uniqueNumbers.length !== input.reservationIds.length) throw new Error("La reserva ya no es válida.");
+    const reservations = new Map(uniqueNumbers.map((number, index) => [number, input.reservationIds[index]]));
+    const valid = uniqueNumbers.every((number) => {
+      const ticket = campaign.tickets.find((item) => item.number === number);
+      return ticket?.status === "RESERVED" && ticket.reservationId === reservations.get(number);
+    });
+    if (!valid) throw new Error("Uno o más números ya no están reservados.");
+    const existing = state.payments.find((item) => item.campaignId === input.campaignId && uniqueNumbers.every((number) => (item.ticketNumbers ?? [item.ticketNumber]).includes(number)) && item.status === "COMPLETED");
     if (existing) return existing;
     const payment: Payment = {
       id: createId("payment"), campaignId: input.campaignId, participantName: input.name, participantEmail: input.email,
-      ticketNumber: input.number, localCurrency: campaign.currency, localAmountMinor: campaign.priceMinor,
+      ticketNumber: uniqueNumbers[0], ticketNumbers: uniqueNumbers, localCurrency: campaign.currency, localAmountMinor: campaign.priceMinor * uniqueNumbers.length,
       provider: "mock", providerOrderId: createId("demo_order"), status: "COMPLETED",
       createdAt: new Date().toISOString(), completedAt: new Date().toISOString(),
     };
     setState((current) => ({
       payments: [payment, ...current.payments],
       campaigns: current.campaigns.map((item) => item.id !== input.campaignId ? item : ({
-        ...item, tickets: item.tickets.map((ticket) => ticket.number === input.number && ticket.reservationId === input.reservationId
+        ...item, tickets: item.tickets.map((ticket) => reservations.get(ticket.number) === ticket.reservationId
           ? { ...ticket, status: "PAID", paymentId: payment.id, reservedUntil: undefined }
           : ticket),
       })),
@@ -105,7 +113,7 @@ export function FondoStoreProvider({ children }: { children: React.ReactNode }) 
   }, [state]);
 
   const resetDemo = useCallback(() => setState(DEMO_STATE), []);
-  const value = useMemo(() => ({ ...state, ready, createCampaign, reserveTicket, completeDemoPayment, resetDemo }), [state, ready, createCampaign, reserveTicket, completeDemoPayment, resetDemo]);
+  const value = useMemo(() => ({ ...state, ready, createCampaign, reserveTickets, completeDemoPayment, resetDemo }), [state, ready, createCampaign, reserveTickets, completeDemoPayment, resetDemo]);
   return <FondoStore.Provider value={value}>{children}</FondoStore.Provider>;
 }
 
