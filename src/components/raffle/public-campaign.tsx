@@ -40,9 +40,9 @@ export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign
     setReserving(true);
     setError("");
     try {
-      let reservationIds: string[]; let expiresAt: string;
+      let reservationIds: string[]; let expiresAt: string; let participantSessionId = "";
       if (initialCampaign) {
-        const participantSessionId = crypto.randomUUID();
+        participantSessionId = crypto.randomUUID();
         const { data, error: reservationError } = await createClient().rpc("reserve_raffle_tickets", { p_campaign_id: campaign.id, p_ticket_numbers: selected, p_participant_session_id: participantSessionId });
         if (reservationError || !data?.length) throw new Error("Uno o más números ya no están disponibles.");
         reservationIds = (data as Array<{ reservation_id: string; expires_at: string }>).map((row) => row.reservation_id);
@@ -52,6 +52,7 @@ export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign
         reservationIds = reservation.reservationIds; expiresAt = reservation.expiresAt;
       }
       const params = new URLSearchParams({ numbers: selected.join(","), reservations: reservationIds.join(","), expires: expiresAt });
+      if (participantSessionId) params.set("participantSession", participantSessionId);
       router.push(`/${organizationSlug}/${campaignSlug}/checkout?${params}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No pudimos reservar esos números.");
