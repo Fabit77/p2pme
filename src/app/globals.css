@@ -1,25 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.985 0.008 145);
-  --foreground: oklch(0.22 0.03 155);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.03 155);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.03 155);
-  --primary: oklch(0.43 0.12 157);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.94 0.025 145);
-  --secondary-foreground: oklch(0.3 0.06 155);
-  --muted: oklch(0.955 0.01 145);
-  --muted-foreground: oklch(0.5 0.025 155);
-  --accent: oklch(0.9 0.06 145);
-  --accent-foreground: oklch(0.28 0.08 155);
+  --brand-dark: #0b2b1f;
+  --brand-mid: #3f7b57;
+  --brand-sage: #8db292;
+  --background: #fafcf9;
+  --foreground: #0b2b1f;
+  --card: #ffffff;
+  --card-foreground: #0b2b1f;
+  --popover: #ffffff;
+  --popover-foreground: #0b2b1f;
+  --primary: #0b2b1f;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f1e9;
+  --secondary-foreground: #173d2c;
+  --muted: #f0f5f1;
+  --muted-foreground: #62756a;
+  --accent: #dceadd;
+  --accent-foreground: #173d2c;
   --destructive: oklch(0.58 0.21 27);
-  --border: oklch(0.9 0.015 145);
-  --input: oklch(0.87 0.018 145);
-  --ring: oklch(0.5 0.12 157);
-  --success: oklch(0.5 0.14 150);
+  --border: #dce6dd;
+  --input: #cad9cd;
+  --ring: #3f7b57;
+  --success: #3f7b57;
   --warning: oklch(0.82 0.14 80);
   --warning-foreground: oklch(0.38 0.09 60);
   --radius: 0.75rem;
@@ -47,6 +50,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-mid: var(--brand-mid);
+  --color-brand-sage: var(--brand-sage);
   --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
@@ -55,7 +61,7 @@
 html { scroll-behavior: smooth; }
 body { background: var(--background); color: var(--foreground); }
 button, a { -webkit-tap-highlight-color: transparent; }
-::selection { background: oklch(0.82 0.08 150); }
+::selection { background: #b9d2bc; }
 
 @keyframes showcase-in {
   from { opacity: 0; transform: translateY(6px); }
