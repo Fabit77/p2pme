@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ArrowLeft, Clock3, Search, Shuffle, X } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +67,7 @@ export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign
       <button onClick={() => router.push("/")} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Volver</button>
       <div className="grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
         <section>
-          <p className="text-sm font-semibold text-primary">{campaign.organizationName}</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">{campaign.title}</h1><p className="mt-4 leading-7 text-muted-foreground">{campaign.description}</p>
+          {campaign.coverImageUrl ? <Image src={campaign.coverImageUrl} alt={`Imagen de ${campaign.title}`} width={720} height={480} priority className="mb-6 aspect-[3/2] w-full rounded-3xl object-cover" /> : null}<p className="text-sm font-semibold text-primary">{campaign.organizationName}</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">{campaign.title}</h1><p className="mt-4 leading-7 text-muted-foreground">{campaign.description}</p>
           <Card className="mt-6"><CardContent className="p-5"><div className="flex items-end justify-between"><div><p className="text-sm text-muted-foreground">Recaudado</p><p className="mt-1 text-2xl font-bold">{formatFiat(sold * campaign.priceMinor)}</p></div><p className="text-sm text-muted-foreground">Meta {formatFiat(campaign.goalMinor)}</p></div><div className="mt-4 h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-success" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-sm font-medium">{sold} de {campaign.ticketCount} números vendidos</p></CardContent></Card>
           <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground"><Clock3 className="size-4" />Todos tus números se reservan durante 10 minutos.</div><p className="mt-5 text-xs leading-5 text-muted-foreground">El organizador es responsable de contar con las autorizaciones necesarias para realizar actividades sujetas a regulación local.</p>
         </section>

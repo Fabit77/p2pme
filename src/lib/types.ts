@@ -22,6 +22,7 @@ export interface Campaign {
   title: string;
   slug: string;
   description: string;
+  coverImageUrl?: string;
   status: CampaignStatus;
   currency: FiatCurrency;
   priceMinor: number;

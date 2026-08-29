@@ -14,3 +14,13 @@ export async function updateSettlementWalletAction(address: string) {
   if (error) throw new Error("No pudimos guardar la wallet.");
   revalidatePath("/dashboard", "layout");
 }
+
+export async function updateOrganizationNameAction(name: string) {
+  const cleanName = z.string().trim().min(2, "Escribe un nombre.").max(120).parse(name);
+  const { organization, canManageOrganization } = await getOrganizerContext();
+  if (!organization || !canManageOrganization) throw new Error("No tienes permisos para editar la organización.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("organizations").update({ name: cleanName }).eq("id", organization.id);
+  if (error) throw new Error("No pudimos guardar el nombre.");
+  revalidatePath("/dashboard", "layout");
+}
