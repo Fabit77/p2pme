@@ -15,7 +15,7 @@ import { useFondoStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import type { Campaign } from "@/lib/types";
 
-export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign }) {
+export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign, demoMode = false }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign; demoMode?: boolean }) {
   const router = useRouter();
   const search = useSearchParams();
   const { campaigns, completeDemoPayment, ready } = useFondoStore();
@@ -43,7 +43,7 @@ export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign }
 
   const countdown = `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
   if (!initialCampaign && !ready) return null;
-  if (!campaign || !numbers.length || reservationIds.length !== numbers.length || (initialCampaign && !participantSessionId)) return <div className="grid min-h-screen place-items-center p-6 text-center"><div><h1 className="text-2xl font-bold">Esta reserva no es válida</h1><Button className="mt-5" onClick={() => router.push(`/${organizationSlug}/${campaignSlug}`)}>Elegir números</Button></div></div>;
+  if (!campaign || !numbers.length || reservationIds.length !== numbers.length || (initialCampaign && !demoMode && !participantSessionId)) return <div className="grid min-h-screen place-items-center p-6 text-center"><div><h1 className="text-2xl font-bold">Esta reserva no es válida</h1><Button className="mt-5" onClick={() => router.push(`/${organizationSlug}/${campaignSlug}`)}>Elegir números</Button></div></div>;
 
   const total = campaign.priceMinor * numbers.length;
   const submitDetails = async (event: FormEvent) => {
@@ -52,7 +52,7 @@ export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign }
     if (seconds <= 0) return setError("La reserva expiró. Elige los números nuevamente.");
     setError(""); setProcessing(true);
     try {
-      if (initialCampaign && IS_P2P_LIVE && !paymentSessionId) {
+      if (initialCampaign && !demoMode && IS_P2P_LIVE && !paymentSessionId) {
         const { data, error: sessionError } = await createClient().rpc("create_checkout_payment_session", {
           p_campaign_id: campaign.id,
           p_reservation_ids: reservationIds,
@@ -69,7 +69,7 @@ export function CheckoutFlow({ organizationSlug, campaignSlug, initialCampaign }
     finally { setProcessing(false); }
   };
   const finishDemo = async () => {
-    if (initialCampaign) { setError("La reserva quedó registrada. Falta conectar el proveedor P2P.me para confirmar el pago real."); return; }
+    if (initialCampaign && !demoMode) { setError("La reserva quedó registrada. Falta conectar el proveedor P2P.me para confirmar el pago real."); return; }
     setProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 900));
     try {

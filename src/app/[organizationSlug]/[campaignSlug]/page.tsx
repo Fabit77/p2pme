@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { PublicCampaign } from "@/components/raffle/public-campaign";
 import { notFound } from "next/navigation";
-import { IS_SUPABASE_CONFIGURED } from "@/lib/config";
+import { APP_CONFIG, IS_SUPABASE_CONFIGURED } from "@/lib/config";
+import { DEMO_STATE } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Campaign } from "@/lib/types";
 export const metadata: Metadata = { title: "Rifa viaje Sub-15", description: "Aporta al viaje del equipo Sub-15." };
 export default async function CampaignPage({ params }: { params: Promise<{ organizationSlug: string; campaignSlug: string }> }) {
   const values = await params;
+  const isDemo = values.organizationSlug === APP_CONFIG.demoOrganizationSlug && values.campaignSlug === APP_CONFIG.demoCampaignSlug;
+  if (isDemo) return <PublicCampaign {...values} initialCampaign={DEMO_STATE.campaigns[0]} demoMode />;
   if (!IS_SUPABASE_CONFIGURED) return <PublicCampaign {...values} />;
   const supabase = await createClient();
   const { data, error } = await supabase.from("campaigns").select("id,type,title,slug,description,cover_image_url,status,local_currency,target_local_price_minor,goal_local_amount_minor,ticket_count,ends_at,created_at,organization_id,organizations!inner(name,slug),raffle_tickets(id,number,status)").eq("slug", values.campaignSlug).eq("status", "ACTIVE").is("deleted_at", null).eq("organizations.slug", values.organizationSlug).maybeSingle();

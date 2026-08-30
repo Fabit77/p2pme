@@ -1,12 +1,15 @@
 import { Suspense } from "react";
 import { CheckoutFlow } from "@/components/checkout/checkout-flow";
 import { notFound } from "next/navigation";
-import { IS_SUPABASE_CONFIGURED } from "@/lib/config";
+import { APP_CONFIG, IS_SUPABASE_CONFIGURED } from "@/lib/config";
+import { DEMO_STATE } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Campaign } from "@/lib/types";
 
 export default async function CheckoutPage({ params }: { params: Promise<{ organizationSlug: string; campaignSlug: string }> }) {
   const values = await params;
+  const isDemo = values.organizationSlug === APP_CONFIG.demoOrganizationSlug && values.campaignSlug === APP_CONFIG.demoCampaignSlug;
+  if (isDemo) return <Suspense><CheckoutFlow {...values} initialCampaign={DEMO_STATE.campaigns[0]} demoMode /></Suspense>;
   if (!IS_SUPABASE_CONFIGURED) return <Suspense><CheckoutFlow {...values} /></Suspense>;
   const supabase = await createClient();
   const { data, error } = await supabase.from("campaigns").select("id,type,title,slug,description,status,local_currency,target_local_price_minor,goal_local_amount_minor,ticket_count,ends_at,created_at,organization_id,organizations!inner(name,slug)").eq("slug", values.campaignSlug).eq("status", "ACTIVE").is("deleted_at", null).eq("organizations.slug", values.organizationSlug).maybeSingle();

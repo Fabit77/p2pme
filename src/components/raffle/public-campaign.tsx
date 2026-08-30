@@ -14,10 +14,11 @@ import { useFondoStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import type { Campaign } from "@/lib/types";
 
-export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign }) {
+export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign, demoMode = false }: { organizationSlug: string; campaignSlug: string; initialCampaign?: Campaign; demoMode?: boolean }) {
   const router = useRouter();
   const { campaigns, ready, reserveTickets } = useFondoStore();
-  const campaign = initialCampaign ?? campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
+  const storedCampaign = campaigns.find((item) => item.organizationSlug === organizationSlug && item.slug === campaignSlug);
+  const campaign = demoMode && ready ? storedCampaign ?? initialCampaign : initialCampaign ?? storedCampaign;
   const [selected, setSelected] = useState<number[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -42,7 +43,7 @@ export function PublicCampaign({ organizationSlug, campaignSlug, initialCampaign
     setError("");
     try {
       let reservationIds: string[]; let expiresAt: string; let participantSessionId = "";
-      if (initialCampaign) {
+      if (initialCampaign && !demoMode) {
         participantSessionId = crypto.randomUUID();
         const { data, error: reservationError } = await createClient().rpc("reserve_raffle_tickets", { p_campaign_id: campaign.id, p_ticket_numbers: selected, p_participant_session_id: participantSessionId });
         if (reservationError || !data?.length) throw new Error("Uno o más números ya no están disponibles.");
