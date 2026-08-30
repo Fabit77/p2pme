@@ -12,17 +12,22 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function LiveCampaignDetail({ id }: { id: string }) {
-  const { organization } = await getOrganizerContext();
-  if (!organization) notFound();
+  await getOrganizerContext();
   const supabase = await createClient();
-  const { data: campaign, error } = await supabase.from("campaigns").select("id,title,slug,description,type,status,visibility,cover_image_url,ticket_count,target_local_price_minor,goal_local_amount_minor,raffle_tickets(status)").eq("id", id).eq("organization_id", organization.id).is("deleted_at", null).maybeSingle();
+  const { data: canView } = await supabase.rpc("can_view_campaign", { p_campaign_id: id });
+  if (!canView) notFound();
+  const { data: campaign, error } = await supabase.from("campaigns").select("id,title,slug,description,type,status,visibility,cover_image_url,ticket_count,target_local_price_minor,goal_local_amount_minor,raffle_tickets(status),organizations!inner(slug)").eq("id", id).is("deleted_at", null).maybeSingle();
   if (error || !campaign) notFound();
-  const [{ data: canEdit }, { data: memberRows }, { data: invitationRows }, { data: drawRow }] = await Promise.all([
+  const [{ data: canEdit }, { data: drawRow }] = await Promise.all([
     supabase.rpc("can_edit_campaign", { p_campaign_id: id }),
-    supabase.from("campaign_members").select("id,user_id,role").eq("campaign_id", id).order("created_at"),
-    supabase.from("campaign_invitations").select("id,email,role").eq("campaign_id", id).order("created_at"),
     supabase.from("raffle_draws").select("id,presentation,created_at").eq("campaign_id", id).maybeSingle(),
   ]);
+  const [{ data: memberRows }, { data: invitationRows }] = canEdit
+    ? await Promise.all([
+        supabase.from("campaign_members").select("id,user_id,role").eq("campaign_id", id).order("created_at"),
+        supabase.from("campaign_invitations").select("id,email,role").eq("campaign_id", id).order("created_at"),
+      ])
+    : [{ data: [] as Array<{ id: string; user_id: string; role: string }> }, { data: [] as Array<{ id: string; email: string; role: string }> }];
   const admin = createAdminClient();
   const memberIds = (memberRows ?? []).map((member) => member.user_id);
   const { data: profiles } = memberIds.length ? await admin.from("profiles").select("id,email").in("id", memberIds) : { data: [] as Array<{ id: string; email: string }> };
@@ -43,7 +48,8 @@ export async function LiveCampaignDetail({ id }: { id: string }) {
   const paid = (campaign.raffle_tickets ?? []).filter((ticket) => ticket.status === "PAID").length;
   const ticketCount = campaign.ticket_count;
   const progress = ticketCount ? paid / ticketCount * 100 : 0;
-  const publicHref = `/${organization.slug}/${campaign.slug}`;
+  const campaignOrganization = campaign.organizations as unknown as { slug: string };
+  const publicHref = `/${campaignOrganization.slug}/${campaign.slug}`;
   const headerList = await headers();
   const host = headerList.get("x-forwarded-host")?.split(",")[0] ?? headerList.get("host") ?? "p2pme.vercel.app";
   const protocol = headerList.get("x-forwarded-proto")?.split(",")[0] ?? (host.startsWith("localhost") ? "http" : "https");
