@@ -68,8 +68,25 @@ button, a { -webkit-tap-highlight-color: transparent; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes landing-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.landing-rise { animation: landing-rise 450ms ease-out both; }
+.landing-float { animation: landing-float 4.2s ease-in-out infinite; }
+.landing-float-delayed { animation: landing-float 4.8s 700ms ease-in-out infinite; }
+.landing-progress { transition: width 700ms ease-out; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
+  .landing-rise, .landing-float, .landing-float-delayed { animation: none !important; }
+  .landing-progress { transition: none !important; }
 }
 
 @media print {
