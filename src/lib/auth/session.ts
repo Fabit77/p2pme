@@ -19,16 +19,24 @@ export async function requireUser() {
 export async function getOrganizerContext() {
   const user = await requireUser();
   const supabase = await createClient();
-  const { data: membership, error } = await supabase
-    .from("organization_members")
-    .select("role, organizations!inner(id,name,slug)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: membership, error }, { data: profile, error: profileError }] = await Promise.all([
+    supabase
+      .from("organization_members")
+      .select("role, organizations!inner(id,name,slug)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+  ]);
   if (error) throw new Error("No pudimos cargar tu organización.");
+  if (profileError) throw new Error("No pudimos cargar tu cuenta.");
+  const displayName = profile?.display_name
+    ?? (typeof user.user_metadata.display_name === "string" ? user.user_metadata.display_name : null)
+    ?? user.email?.split("@")[0]
+    ?? "Cuenta";
   const organization = membership?.organizations as unknown as { id: string; name: string; slug: string } | null;
-  if (organization) return { user, organization, role: membership?.role ?? null, scope: "organization" as const, canCreateCampaign: true, canManageOrganization: true };
+  if (organization) return { user, displayName, organization, role: membership?.role ?? null, scope: "organization" as const, canCreateCampaign: true, canManageOrganization: true };
 
   const { data: campaignMembership, error: campaignError } = await supabase
     .from("campaign_members")
@@ -41,6 +49,7 @@ export async function getOrganizerContext() {
   const campaign = campaignMembership?.campaigns as unknown as { organizations: { id: string; name: string; slug: string } } | null;
   return {
     user,
+    displayName,
     organization: campaign?.organizations ?? null,
     role: campaignMembership?.role ?? null,
     scope: campaign ? "campaign" as const : null,

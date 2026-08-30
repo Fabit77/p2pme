@@ -2,8 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getOrganizerContext } from "@/lib/auth/session";
+import { getOrganizerContext, requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+
+export async function updateAccountNameAction(name: string) {
+  const cleanName = z.string().trim().min(2, "Escribe tu nombre.").max(100).parse(name);
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ display_name: cleanName })
+    .eq("id", user.id)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) throw new Error("No pudimos guardar el nombre de tu cuenta.");
+  revalidatePath("/dashboard", "layout");
+}
 
 export async function updateSettlementWalletAction(address: string) {
   const wallet = z.string().trim().regex(/^0x[0-9a-fA-F]{40}$/, "Dirección de wallet inválida.").parse(address);

@@ -8,7 +8,7 @@ import { calculateAvailableUsdc, type WithdrawalStatus } from "@/lib/withdrawals
 
 export default async function DashboardPage() {
   if (!IS_SUPABASE_CONFIGURED) return <DashboardView />;
-  const { organization, canCreateCampaign, canManageOrganization } = await getOrganizerContext();
+  const { displayName, organization, canCreateCampaign, canManageOrganization } = await getOrganizerContext();
   if (!organization) return <OrganizationOnboarding />;
   const supabase = await createClient();
   const [{ data: rows, error }, { data: paymentRows, count: paymentCount }, { data: withdrawalRows }] = await Promise.all([
@@ -30,5 +30,5 @@ export default async function DashboardPage() {
   }));
   const received = (paymentRows ?? []).reduce((sum, row) => sum + BigInt(row.usdc_amount_micro ?? 0), 0n);
   const withdrawals = (withdrawalRows ?? []).map((row) => ({ amount: BigInt(row.amount_usdc_micro), status: row.status as WithdrawalStatus }));
-  return <LiveDashboardView organizationName={organization.name} campaigns={campaigns} paymentCount={paymentCount ?? 0} availableUsdcMicro={calculateAvailableUsdc(received, withdrawals)} canCreateCampaign={canCreateCampaign} canViewBalance={canManageOrganization} />;
+  return <LiveDashboardView accountName={displayName} campaigns={campaigns} paymentCount={paymentCount ?? 0} availableUsdcMicro={calculateAvailableUsdc(received, withdrawals)} canCreateCampaign={canCreateCampaign} canViewBalance={canManageOrganization} />;
 }
