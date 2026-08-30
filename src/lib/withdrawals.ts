@@ -1,9 +1,26 @@
 import { z } from "zod";
 
-export const withdrawalInputSchema = z.object({
-  amount: z.string().trim().regex(/^\d+(?:[.,]\d{1,6})?$/, "Escribe un monto válido con hasta 6 decimales."),
-  destinationAddress: z.string().trim().regex(/^0x[0-9a-fA-F]{40}$/, "Escribe una dirección de wallet válida."),
-});
+const amountSchema = z.string().trim().regex(/^\d+(?:[.,]\d{1,6})?$/, "Escribe un monto válido con hasta 6 decimales.");
+
+export const withdrawalInputSchema = z.discriminatedUnion("method", [
+  z.object({
+    method: z.literal("USDC"),
+    amount: amountSchema,
+    destinationAddress: z.string().trim().regex(/^0x[0-9a-fA-F]{40}$/, "Escribe una dirección de wallet válida."),
+  }),
+  z.object({
+    method: z.literal("BANK"),
+    amount: amountSchema,
+    accountHolder: z.string().trim().min(2).max(120),
+    holderId: z.string().trim().min(2).max(80),
+    bankName: z.string().trim().min(2).max(120),
+    accountType: z.string().trim().min(2).max(60),
+    accountNumber: z.string().trim().min(3).max(100),
+    currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "Usa un código de moneda de 3 letras."),
+  }),
+]);
+
+export type WithdrawalMethod = "USDC" | "BANK";
 
 export function parseUsdcToMicro(input: string) {
   const normalized = input.trim().replace(",", ".");

@@ -92,3 +92,32 @@ export async function archiveCampaignAction(campaignId: string, confirmation: st
   revalidatePath("/dashboard", "layout");
   redirect("/dashboard");
 }
+
+export async function closeRaffleAction(campaignId: string) {
+  const { id, supabase } = await requireCampaignEditor(campaignId);
+  const { error } = await supabase.rpc("close_raffle_for_draw", { p_campaign_id: id });
+  if (error?.message.includes("RAFFLE_HAS_ACTIVE_RESERVATIONS")) throw new Error("Hay números reservados o pagos en curso. Espera a que se confirmen o venzan antes de cerrar.");
+  if (error) throw new Error("No pudimos cerrar la rifa. Puede que ya no esté activa.");
+  revalidatePath(`/dashboard/campaigns/${id}`);
+  revalidatePath("/dashboard");
+}
+
+export async function conductRaffleDrawAction(input: unknown) {
+  const parsed = z.object({
+    campaignId: idSchema,
+    presentation: z.enum(["WHEEL", "LIST"]),
+    prizes: z.array(z.string().trim().min(1).max(120)).min(1).max(100),
+  }).parse(input);
+  const { supabase } = await requireCampaignEditor(parsed.campaignId);
+  const { data, error } = await supabase.rpc("conduct_raffle_draw", {
+    p_campaign_id: parsed.campaignId,
+    p_prize_labels: parsed.prizes,
+    p_presentation: parsed.presentation,
+  });
+  if (error?.message.includes("RAFFLE_MUST_BE_CLOSED")) throw new Error("Primero debes cerrar la rifa.");
+  if (error?.message.includes("NOT_ENOUGH_SOLD_TICKETS")) throw new Error("No hay suficientes números vendidos para esa cantidad de ganadores.");
+  if (error?.message.includes("RAFFLE_ALREADY_DRAWN")) throw new Error("Esta rifa ya tiene un sorteo oficial.");
+  if (error) throw new Error("No pudimos realizar el sorteo.");
+  revalidatePath(`/dashboard/campaigns/${parsed.campaignId}`);
+  return data as string;
+}

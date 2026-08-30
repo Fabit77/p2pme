@@ -16,7 +16,16 @@ export async function requestWithdrawalAction(input: unknown) {
   const { error } = await supabase.rpc("create_withdrawal_request", {
     p_organization_id: organization.id,
     p_amount_usdc_micro: amountMicro.toString(),
-    p_destination_address: parsed.destinationAddress,
+    p_method: parsed.method,
+    p_destination_address: parsed.method === "USDC" ? parsed.destinationAddress : null,
+    p_bank_details: parsed.method === "BANK" ? {
+      accountHolder: parsed.accountHolder,
+      holderId: parsed.holderId,
+      bankName: parsed.bankName,
+      accountType: parsed.accountType,
+      accountNumber: parsed.accountNumber,
+      currency: parsed.currency,
+    } : null,
   });
   if (error?.message.includes("INSUFFICIENT_AVAILABLE_BALANCE")) throw new Error("El monto supera tu saldo disponible.");
   if (error) throw new Error("No pudimos crear la solicitud de retiro.");
