@@ -65,12 +65,13 @@ begin
     raise exception using errcode = 'P0001', message = 'INVALID_OR_EXPIRED_RESERVATION';
   end if;
 
-  select min(payment_session_id) into v_existing_session_id
+  select min(ticket_reservations.payment_session_id::text)::uuid into v_existing_session_id
     from public.ticket_reservations
-    where id = any(p_reservation_ids) and payment_session_id is not null;
+    where id = any(p_reservation_ids)
+      and ticket_reservations.payment_session_id is not null;
   if v_existing_session_id is not null then
-    if (select count(payment_session_id) from public.ticket_reservations where id = any(p_reservation_ids)) <> v_requested_count
-      or (select count(distinct payment_session_id) from public.ticket_reservations where id = any(p_reservation_ids)) <> 1 then
+    if (select count(ticket_reservations.payment_session_id) from public.ticket_reservations where id = any(p_reservation_ids)) <> v_requested_count
+      or (select count(distinct ticket_reservations.payment_session_id) from public.ticket_reservations where id = any(p_reservation_ids)) <> 1 then
       raise exception using errcode = 'P0001', message = 'RESERVATIONS_ALREADY_ATTACHED';
     end if;
     return query
