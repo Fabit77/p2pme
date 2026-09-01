@@ -5,7 +5,8 @@ export interface CompletedOrderEvidence {
   expectedFiatAmount: bigint;
   expectedPayer: Address;
   expectedIntegrator: Address;
-  expectedClient: Address;
+  expectedTreasury: Address;
+  actualTreasury: Address;
   transactionFrom: Address;
   transactionTo: Address | null;
   receiptOrderId: string | null;
@@ -18,7 +19,8 @@ export function assertCompletedOrder(input: CompletedOrderEvidence) {
   if (input.order.id.toString() !== input.orderId || input.receiptOrderId !== input.orderId) throw new Error("La orden no coincide con la transacción registrada.");
   if (input.transactionTo?.toLowerCase() !== input.expectedIntegrator.toLowerCase()) throw new Error("La transacción no fue enviada al integrador de Fondo.");
   if (input.transactionFrom.toLowerCase() !== input.expectedPayer.toLowerCase()) throw new Error("La wallet pagadora no coincide con la sesión.");
-  if (input.order.recipientAddr.toLowerCase() !== input.expectedClient.toLowerCase()) throw new Error("El destinatario on-chain no corresponde a Fondo.");
+  if (input.order.recipientAddr.toLowerCase() !== input.expectedIntegrator.toLowerCase()) throw new Error("El destinatario on-chain no corresponde al integrador de Fondo.");
+  if (input.actualTreasury.toLowerCase() !== input.expectedTreasury.toLowerCase()) throw new Error("La tesorería inmutable del integrador no corresponde a Fondo.");
   if (hexToString(input.order.currency).replace(/\0/g, "") !== "ARS") throw new Error("La moneda on-chain no corresponde a ARS.");
   if (input.actualFiatAmount !== input.expectedFiatAmount) throw new Error("El monto on-chain no coincide con la reserva.");
   if (input.order.amount <= 0n) throw new Error("La orden completada no contiene un monto USDC válido.");

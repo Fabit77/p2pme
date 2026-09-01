@@ -13,8 +13,9 @@ export function LiveP2PCheckout({ signer, fiatAmountMinor, productName, persistO
   const config = getP2PLiveConfig(); const publicClient = createPublicClient({ chain: baseSepolia, transport: http(config.NEXT_PUBLIC_P2P_RPC_URL) });
   const placeOrder = async (ctx: PlaceOrderContext): Promise<PlaceOrderResult> => {
     if (!ctx.currency || ctx.currency.circleId === undefined) throw new Error("P2P.me no encontró un círculo ARS elegible.");
+    if (!ctx.usdcAmount || ctx.usdcAmount <= 0n) throw new Error("P2P.me no pudo calcular el monto en USDC.");
     const store = createLocalStorageRelayStore(); let identity = await store.get(); if (!identity) { identity = createRelayIdentity(); await store.set(identity); }
-    const data = encodeFunctionData({ abi: INTEGRATOR_ABI, functionName: "userPlaceOrder", args: [config.NEXT_PUBLIC_P2P_CLIENT_ADDRESS as `0x${string}`, 1n, 1n, stringToHex(ctx.currency.symbol, { size: 32 }), ctx.currency.circleId, identity.publicKey, ctx.currency.paymentChannelConfigId ?? 0n, ctx.fiatAmount ?? 0n] });
+    const data = encodeFunctionData({ abi: INTEGRATOR_ABI, functionName: "userPlaceOrder", args: [ctx.usdcAmount, stringToHex(ctx.currency.symbol, { size: 32 }), ctx.currency.circleId, identity.publicKey, ctx.currency.paymentChannelConfigId ?? 0n, ctx.fiatAmount ?? 0n] });
     const { hash } = await signer.sendTransaction({ to: config.NEXT_PUBLIC_P2P_INTEGRATOR_ADDRESS as `0x${string}`, data, gasLimit: 1_500_000 });
     const receipt = await publicClient.waitForTransactionReceipt({ hash }); if (receipt.status === "reverted") throw new Error("La transacción del integrador fue revertida.");
     const orderId = parseOrderIdFromReceipt(receipt); if (!orderId) throw new Error("No se encontró el orderId en el recibo.");

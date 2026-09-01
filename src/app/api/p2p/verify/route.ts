@@ -43,7 +43,13 @@ export async function POST(request: Request) {
     return Response.json({ paymentId });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "No pudimos verificar el pago.";
-    const status = cause instanceof z.ZodError ? 400 : message.includes("configurada") ? 503 : 422;
+    const status = cause instanceof z.ZodError
+      ? 400
+      : message.includes("configurada")
+        ? 503
+        : message.includes("todavía no está completada on-chain")
+          ? 409
+          : 422;
     return Response.json({ error: message }, { status });
   }
 }

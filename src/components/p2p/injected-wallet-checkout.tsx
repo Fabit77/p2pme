@@ -54,14 +54,20 @@ export function InjectedWalletCheckout({ paymentSessionId, participantSessionId,
   const verify = async () => {
     setVerifying(true); setMessage("Verificando la transacción en Base Sepolia…");
     try {
-      const response = await fetch("/api/p2p/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentSessionId, participantSessionId }) });
-      const result = await response.json() as { paymentId?: string; error?: string };
-      if (!response.ok || !result.paymentId) throw new Error(result.error || "No pudimos verificar el pago.");
-      router.push(`/receipt/${result.paymentId}?token=${receiptToken}`);
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const response = await fetch("/api/p2p/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentSessionId, participantSessionId }) });
+        const result = await response.json() as { paymentId?: string; error?: string };
+        if (response.ok && result.paymentId) {
+          router.push(`/receipt/${result.paymentId}?token=${receiptToken}`);
+          return;
+        }
+        if (response.status !== 409 || attempt === 19) throw new Error(result.error || "No pudimos verificar el pago.");
+        setMessage("El pago fue informado. Esperando la confirmación final en Base Sepolia…");
+        await new Promise((resolve) => setTimeout(resolve, 3_000));
+      }
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "No pudimos verificar el pago.");
-      setVerifying(false);
-    }
+    } finally { setVerifying(false); }
   };
 
   if (!signer) return <div className="rounded-xl border bg-card p-5 text-center"><p className="text-sm leading-6 text-muted-foreground">Conecta una wallet de prueba en Base Sepolia para iniciar el pago. La wallet embebida reemplazará este paso cuando configuremos el proveedor.</p><Button className="mt-4 w-full" onClick={connect} disabled={connecting}>{connecting ? "Conectando…" : "Conectar wallet"}</Button>{message && <p role="alert" className="mt-3 text-sm text-destructive">{message}</p>}</div>;

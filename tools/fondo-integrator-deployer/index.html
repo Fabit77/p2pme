@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Desplegar FondoTreasuryIntegrator</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color:#062d22;background:#f4faf5}*{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}.card{width:min(720px,100%);background:#fff;border:1px solid #d7e5da;border-radius:24px;padding:32px;box-shadow:0 18px 50px #1233}
+    h1{margin:0 0 8px;font-size:30px}.muted{color:#62766b}.grid{display:grid;gap:12px;margin:26px 0}.row{padding:14px 16px;border-radius:14px;background:#edf5ef}.row b{display:block;margin-bottom:5px}.address{font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+    .warning{padding:14px 16px;border-radius:14px;background:#fff7e8;color:#754400;margin:18px 0}button{width:100%;border:0;border-radius:14px;padding:15px 18px;font-weight:800;font-size:16px;cursor:pointer;background:#06382b;color:white;margin-top:10px}button.secondary{background:#e2eee5;color:#06382b}button:disabled{opacity:.45;cursor:not-allowed}
+    #status{white-space:pre-wrap;padding:14px 16px;border-radius:14px;background:#f2f5f3;margin-top:18px;min-height:52px}.ok{background:#e4f7e9!important;color:#125c2c}.error{background:#ffebeb!important;color:#8f1d1d}a{color:#076b4c}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Desplegar tesorería Fondo</h1>
+    <p class="muted">Herramienta local. MetaMask firma la transacción; esta página nunca solicita ni recibe tu clave privada.</p>
+    <div class="grid">
+      <div class="row"><b>Red</b>Base Sepolia (chain ID 84532)</div>
+      <div class="row"><b>Wallet autorizada para desplegar</b><span class="address">0x77E2e22055b915ba0244933E8459ba73F0571883</span></div>
+      <div class="row"><b>Tesorería inmutable</b><span class="address">0xA3B2BD9d16030d31b82B3E5a084f1A736ed9F769</span></div>
+      <div class="row"><b>Máximo inicial por pago</b>1.000 USDC</div>
+      <div class="row"><b>Máximo inicial diario</b>100 pagos por wallet</div>
+    </div>
+    <div class="warning">Antes de firmar, MetaMask debe mostrar Base Sepolia. La transacción despliega un contrato; solo consumirá ETH de prueba para gas.</div>
+    <button id="connect">1. Conectar MetaMask</button>
+    <button id="deploy" disabled>2. Desplegar contrato</button>
+    <div id="status">Esperando conexión…</div>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
