@@ -24,6 +24,40 @@ function evidence(overrides: Partial<CompletedOrderEvidence> = {}): CompletedOrd
 }
 
 describe("assertCompletedOrder", () => {
+  const sponsored = () => evidence({
+    transactionFrom: treasury, transactionTo: treasury,
+    placement: { emitter: integrator, orderId: "42", user: payer, amount: 15_000000n, currency: stringToHex("ARS", { size: 32 }) },
+    integratorSession: { user: payer, fulfilled: true, cancelled: false, amount: 15_000000n, currency: stringToHex("ARS", { size: 32 }) },
+  });
+
+  it("verifies sponsored transactions using authenticated integrator evidence, not the relayer", () => {
+    expect(assertCompletedOrder(sponsored())).toEqual({ usdcAmountMicro: 15_000000n });
+  });
+
+  it("rejects a spoofed integrator event", () => {
+    const input = sponsored();
+    input.placement!.emitter = treasury;
+    expect(() => assertCompletedOrder(input)).toThrow("no proviene");
+  });
+
+  it("rejects a sponsored order owned by another payer", () => {
+    const input = sponsored();
+    input.placement!.user = treasury;
+    expect(() => assertCompletedOrder(input)).toThrow("no coincide con la sesión");
+  });
+
+  it("does not credit a completed Diamond order if treasury settlement failed", () => {
+    const input = sponsored();
+    input.integratorSession!.fulfilled = false;
+    expect(() => assertCompletedOrder(input)).toThrow("liquidación a la tesorería");
+  });
+
+  it("requires integrator session evidence for sponsored transactions", () => {
+    const input = sponsored();
+    delete input.integratorSession;
+    expect(() => assertCompletedOrder(input)).toThrow("liquidación a la tesorería");
+  });
+
   it("accepts matching completed on-chain evidence", () => {
     expect(assertCompletedOrder(evidence())).toEqual({ usdcAmountMicro: 15_000000n });
   });

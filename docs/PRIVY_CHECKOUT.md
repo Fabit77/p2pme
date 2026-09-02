@@ -14,6 +14,8 @@ rechaza el patrocinio se muestra un error, nunca una alternativa con gas del usu
   localhost o quitar el origen local cuando termine la prueba.
 - Activar y financiar/configurar el patrocinio de gas de Base Sepolia según el
   panel de Privy. No asumir que obtener el App ID activa el patrocinio.
+- En Gas sponsorship, usar **App pays** y habilitar solicitudes desde el cliente.
+  Las wallets deben usar TEE execution, requisito de Privy para patrocinio nativo.
 - Limitar el patrocinio en el proveedor a Base Sepolia, al integrador de Fondo
   y al Diamond configurados; establecer topes de gasto y controles de abuso.
   La validación de destinos del cliente no sustituye estas políticas del proveedor.
@@ -24,6 +26,10 @@ Esta implementación continúa en testnet: no transferir ARS reales.
 
 La sesión de invitado no cambia el login Supabase de Fondo. El pago solo se
 acredita después de la verificación del servidor contra la orden y tesorería.
+Los pagos patrocinados pueden utilizar user operations: el servidor verifica
+el `OrderPlaced` emitido por el integrador exacto, su usuario, monto y moneda,
+y `sessions(orderId).fulfilled` para confirmar la transferencia a tesorería;
+no confía en el remitente exterior del relayer.
 Todavía debe validarse el ciclo completo con el patrocinio activado; un build
 correcto no acredita que el comerciante haya recibido un pago.
 

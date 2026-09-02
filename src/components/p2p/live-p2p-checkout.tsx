@@ -1,11 +1,12 @@
 "use client";
 import { createLocalStorageRelayStore, createRelayIdentity } from "@p2pdotme/sdk/orders";
-import { parseOrderIdFromReceipt, type CheckoutSigner, type CurrencyOption } from "@p2pdotme/widgets";
+import { type CheckoutSigner, type CurrencyOption } from "@p2pdotme/widgets";
 import { Checkout, type PlaceOrderContext, type PlaceOrderResult } from "@p2pdotme/widgets/checkout";
 import { createPublicClient, encodeFunctionData, http, stringToHex } from "viem";
 import { baseSepolia } from "viem/chains";
 import { getP2PLiveConfig } from "@/lib/p2p/config";
 import { INTEGRATOR_ABI } from "@/lib/p2p/integrator-abi";
+import { findIntegratorPlacement } from "@/lib/p2p/placement-evidence";
 
 const currencies: CurrencyOption[] = [{ symbol: "ARS", flag: "🇦🇷", paymentMethod: "Transferencia bancaria", symbolNative: "$", country: "Argentina" }];
 
@@ -18,7 +19,7 @@ export function LiveP2PCheckout({ signer, fiatAmountMinor, productName, persistO
     const data = encodeFunctionData({ abi: INTEGRATOR_ABI, functionName: "userPlaceOrder", args: [ctx.usdcAmount, stringToHex(ctx.currency.symbol, { size: 32 }), ctx.currency.circleId, identity.publicKey, ctx.currency.paymentChannelConfigId ?? 0n, ctx.fiatAmount ?? 0n] });
     const { hash } = await signer.sendTransaction({ to: config.NEXT_PUBLIC_P2P_INTEGRATOR_ADDRESS as `0x${string}`, data, gasLimit: 1_500_000 });
     const receipt = await publicClient.waitForTransactionReceipt({ hash }); if (receipt.status === "reverted") throw new Error("La transacción del integrador fue revertida.");
-    const orderId = parseOrderIdFromReceipt(receipt); if (!orderId) throw new Error("No se encontró el orderId en el recibo.");
+    const { orderId } = findIntegratorPlacement(receipt.logs, config.NEXT_PUBLIC_P2P_INTEGRATOR_ADDRESS as `0x${string}`, signer.address);
     await persistOrder(orderId, hash, signer.address);
     return { orderId, txHash: hash };
   };
