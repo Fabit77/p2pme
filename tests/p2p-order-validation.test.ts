@@ -85,4 +85,12 @@ describe("assertCompletedOrder", () => {
   it("rejects a mismatched fiat amount", () => {
     expect(() => assertCompletedOrder(evidence({ actualFiatAmount: 14_999_000000n }))).toThrow("monto on-chain");
   });
+
+  it("accepts sub-cent downward conversion dust after all settlement checks", () => {
+    expect(assertCompletedOrder(evidence({ actualFiatAmount: 15_000_000000n - 1_383n }))).toEqual({ usdcAmountMicro: 15_000000n });
+  });
+
+  it.each([1n, -5_000n, -10_000n])("rejects overpayment or a meaningful shortfall (%s)", (difference) => {
+    expect(() => assertCompletedOrder(evidence({ actualFiatAmount: 15_000_000000n + difference }))).toThrow("monto on-chain");
+  });
 });

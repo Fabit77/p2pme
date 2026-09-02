@@ -1,5 +1,6 @@
 import { hexToString, type Address, type Hex } from "viem";
 import type { IntegratorPlacement } from "./placement-evidence";
+import { matchesReservedFiat } from "./fiat-rounding";
 
 export interface CompletedOrderEvidence {
   orderId: string;
@@ -35,7 +36,7 @@ export function assertCompletedOrder(input: CompletedOrderEvidence) {
   if (input.order.recipientAddr.toLowerCase() !== input.expectedIntegrator.toLowerCase()) throw new Error("El destinatario on-chain no corresponde al integrador de Fondo.");
   if (input.actualTreasury.toLowerCase() !== input.expectedTreasury.toLowerCase()) throw new Error("La tesorería inmutable del integrador no corresponde a Fondo.");
   if (hexToString(input.order.currency).replace(/\0/g, "") !== "ARS") throw new Error("La moneda on-chain no corresponde a ARS.");
-  if (input.actualFiatAmount !== input.expectedFiatAmount) throw new Error("El monto on-chain no coincide con la reserva.");
+  if (!matchesReservedFiat(input.actualFiatAmount, input.expectedFiatAmount)) throw new Error("El monto on-chain no coincide con la reserva.");
   if (input.order.amount <= 0n) throw new Error("La orden completada no contiene un monto USDC válido.");
   return { usdcAmountMicro: input.order.amount };
 }
