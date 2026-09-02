@@ -23,7 +23,8 @@ begin
     'count(distinct ticket_reservations.payment_session_id)'
   );
 
-  if function_definition not like '%min(ticket_reservations.payment_session_id)%'
+  if (function_definition not like '%min(ticket_reservations.payment_session_id)%'
+    and function_definition not like '%min(ticket_reservations.payment_session_id::text)::uuid%')
     or function_definition not like '%count(ticket_reservations.payment_session_id)%'
     or function_definition not like '%count(distinct ticket_reservations.payment_session_id)%'
   then
