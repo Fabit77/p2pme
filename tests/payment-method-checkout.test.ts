@@ -11,7 +11,7 @@ describe("payment method selector", () => {
       fiatAmountMinor: 300000n, productName: "Campaña",
     }));
     expect(html).toContain("Pesos argentinos");
-    expect(html).toContain("Sin conectar wallet");
+    expect(html).toContain("Sin conectar una wallet");
     expect(html).toContain("USDC · Próximamente");
     expect(html).toContain("No transfieras pesos reales");
     expect(html).not.toContain("Conectar wallet");

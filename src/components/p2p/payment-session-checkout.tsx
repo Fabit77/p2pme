@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CheckoutSigner } from "@p2pdotme/widgets";
 import { LiveP2PCheckout } from "@/components/p2p/live-p2p-checkout";
+import { SimulatedPaymentContinuation } from "@/components/p2p/simulated-payment-continuation";
 import { createClient } from "@/lib/supabase/client";
 
 export interface PaymentSessionCheckoutProps {
@@ -17,6 +18,7 @@ export interface PaymentSessionCheckoutProps {
 export function PaymentSessionCheckout({ signer, paymentSessionId, participantSessionId, receiptToken, fiatAmountMinor, productName }: PaymentSessionCheckoutProps & { signer: CheckoutSigner }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [placedOrderId, setPlacedOrderId] = useState("");
   const [verifying, setVerifying] = useState(false);
   const persistOrder = async (orderId: string, txHash: string, payerWalletAddress: string) => {
     const { error } = await createClient().rpc("record_p2p_order", {
@@ -53,8 +55,12 @@ export function PaymentSessionCheckout({ signer, paymentSessionId, participantSe
   };
   return <div>
     <LiveP2PCheckout signer={signer} fiatAmountMinor={fiatAmountMinor} productName={productName}
-      persistOrder={persistOrder} onOrderPlaced={() => setMessage("Orden creada. Sigue las instrucciones de P2P.me para pagar en pesos.")}
+      persistOrder={persistOrder} onOrderPlaced={(orderId) => {
+        setPlacedOrderId(orderId);
+        setMessage(`Orden #${orderId} creada en Base Sepolia. Estamos esperando que un comercio de prueba la acepte.`);
+      }}
       onComplete={() => void verify()} onError={(error) => setMessage(error.message)} />
     {(message || verifying) && <p role="status" className="mt-3 rounded-xl bg-muted p-3 text-sm">{message}</p>}
+    {placedOrderId && <SimulatedPaymentContinuation orderId={placedOrderId} fiatAmountMinor={fiatAmountMinor} productName={productName} />}
   </div>;
 }
